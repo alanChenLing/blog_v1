@@ -57,3 +57,55 @@ class UserModelTestCase(unittest.TestCase):
         token = u.generate_confirmation_token(1)
         time.sleep(2)
         self.assertFalse(u.confirm(token))
+
+    def test_valid_reset_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_token()
+        self.assertTrue(u.reset_password(token, 'dog'))
+        self.assertTrue(u.verify_password('dog'))
+
+    def test_invalid_reset_token(self):
+        u1 = User(password='cat')
+        u2 = User(password='dog')
+        db.session.add_all([u1, u2])
+        db.session.commit()
+        token = u1.generate_reset_token()
+        self.assertFalse(u2.reset_password(token, 'horse'))
+        self.assertTrue(u2.verify_password('dog'))
+
+    def test_valid_email_change_token(self):
+        u = User(email='alan@example.com', password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_email_change_token('ling@example.com')
+        self.assertTrue(u.change_email(token))
+        self.assertTrue(u.email == 'ling@example.com')
+
+    def test_invalid_email_change_token(self):
+        u1 = User(email='alan@example.com', password='cat')
+        u2 = User(email='ling@example.com', password='dog')
+        db.session.add_all([u1, u2])
+        db.session.commit()
+        token = u1.generate_email_change_token('chen@example.com')
+        self.assertFalse(u2.change_email(token))
+        self.assertTrue(u2.email == 'ling@example.com')
+
+    def test_duplicate_email_change_token(self):
+        u1 = User(email='alan@example.com', password='cat')
+        u2 = User(email='ling@example.com', password='dog')
+        db.session.add_all([u1, u2])
+        db.session.commit()
+        token = u2.generate_email_change_token('alan@example.com')
+        self.assertFalse(u2.change_email(token))
+        self.assertTrue(u2.email == 'ling@example.com')
+
+
+
+
+
+
+
+
+
